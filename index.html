@@ -1,0 +1,1101 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treasure Maze - 迷宮尋寶</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
+    background: #111827;
+    color: #f8fafc;
+    font-family: "Courier New", monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 650px;
+    text-align: center;
+}
+
+h1 {
+    color: #facc15;
+    font-size: clamp(25px, 5vw, 36px);
+    text-shadow: 3px 3px #92400e;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: #94a3b8;
+    margin-bottom: 20px;
+}
+
+.status {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.status div {
+    background: #263449;
+    border: 2px solid #475569;
+    padding: 10px 5px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.status span {
+    display: block;
+    color: #facc15;
+    font-size: 19px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.game-stage {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    margin: auto;
+    border: 5px solid #64748b;
+    border-radius: 5px;
+    overflow: hidden;
+    background: #172033;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 17, 31, 0.94);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    z-index: 2;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.overlay h2 {
+    color: #facc15;
+    font-size: clamp(22px, 5vw, 32px);
+    text-shadow: 3px 3px #92400e;
+    margin: 8px 0;
+}
+
+.overlay p {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.8;
+    max-width: 380px;
+}
+
+.big-icon {
+    font-size: 48px;
+    margin-bottom: 5px;
+}
+
+button {
+    background: #d97706;
+    color: white;
+    border: 2px solid #fbbf24;
+    border-radius: 7px;
+    padding: 11px 18px;
+    margin: 5px;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #f59e0b;
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: scale(0.96);
+}
+
+.top-buttons {
+    margin: 10px 0;
+}
+
+.top-buttons button {
+    background: #334155;
+    border-color: #64748b;
+}
+
+.message {
+    min-height: 40px;
+    margin: 10px 0;
+    color: #facc15;
+    font-weight: bold;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.controls {
+    margin-top: 12px;
+}
+
+.controls button {
+    width: 55px;
+    height: 45px;
+    padding: 5px;
+    font-size: 20px;
+    background: #334155;
+    border-color: #64748b;
+    touch-action: manipulation;
+}
+
+.controls button:active {
+    background: #d97706;
+}
+
+.help {
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.8;
+    margin-top: 15px;
+}
+
+@media (max-width: 450px) {
+    body {
+        padding: 10px;
+    }
+
+    .status div {
+        font-size: 11px;
+    }
+
+    .status span {
+        font-size: 16px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🏆 TREASURE MAZE</h1>
+    <div class="subtitle">迷宮尋寶大冒險</div>
+
+    <div class="status">
+        <div>
+            LEVEL
+            <span id="level">1 / 3</span>
+        </div>
+
+        <div>
+            SCORE
+            <span id="score">0</span>
+        </div>
+
+        <div>
+            ❤️ LIFE
+            <span id="life">❤️❤️❤️</span>
+        </div>
+    </div>
+
+    <div class="game-stage">
+
+        <canvas id="game" width="520" height="360"></canvas>
+
+        <!-- 開始、結束及勝利畫面 -->
+        <div class="overlay" id="overlay">
+
+            <div class="big-icon" id="overlayIcon">🗝️</div>
+
+            <h2 id="overlayTitle">TREASURE MAZE</h2>
+
+            <p id="overlayText">
+                歡迎來到迷宮尋寶！<br>
+                收集所有寶箱，避開怪物與陷阱，<br>
+                找到出口並完成三個關卡。
+            </p>
+
+            <button id="startButton" onclick="startGame()">
+                ▶ 開始遊戲
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="top-buttons">
+        <button id="soundButton" onclick="toggleSound()">
+            🔊 音效：開啟
+        </button>
+        <button onclick="restartGame()">
+            🔄 重新開始
+        </button>
+    </div>
+
+    <div class="message" id="message">
+        準備好開始冒險了嗎？
+    </div>
+
+    <!-- 手機觸控操作 -->
+    <div class="controls">
+        <div>
+            <button onclick="move(0,-1)">▲</button>
+        </div>
+        <div>
+            <button onclick="move(-1,0)">◀</button>
+            <button onclick="move(0,1)">▼</button>
+            <button onclick="move(1,0)">▶</button>
+        </div>
+    </div>
+
+    <div class="help">
+        操作方式：方向鍵 / WASD / 螢幕按鈕<br>
+        🟦 玩家　💰 寶箱　👾 怪物　🔥 陷阱　🚪 出口
+        <br>
+        收集所有寶箱才能進入下一關！
+    </div>
+
+</div>
+
+<script>
+
+// ==========================================
+// 1. 遊戲基本設定
+// ==========================================
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const TILE = 40;
+const COLS = 13;
+const ROWS = 9;
+
+const maps = [
+
+    // 第一關：簡單
+    [
+        "#############",
+        "#P..C.......#",
+        "#.###.###...#",
+        "#...#...#...#",
+        "###.#.###.#.#",
+        "#...#...C...#",
+        "#.#####.#...#",
+        "#T....E....X#",
+        "#############"
+    ],
+
+    // 第二關：兩隻怪物
+    [
+        "#############",
+        "#P.C........#",
+        "#.###.###.#.#",
+        "#...#...#E..#",
+        "###.#.#.###.#",
+        "#C..#.#...C.#",
+        "#.###.###.#.#",
+        "#T...E....X#",
+        "#############"
+    ],
+
+    // 第三關：兩隻怪物、更多障礙
+    [
+        "#############",
+        "#P..C...#..E#",
+        "#.###.#.#.#.#",
+        "#...#T...#..#",
+        "###.#.###.#.#",
+        "#C..#...C...#",
+        "#.#####.###.#",
+        "#T...E.....X#",
+        "#############"
+    ]
+
+];
+
+// 各關怪物移動間隔（毫秒）
+const enemySpeeds = [1000, 700, 450];
+
+let map = [];
+let player = { x: 1, y: 1 };
+let enemies = [];
+
+let score = 0;
+let lives = 3;
+let level = 1;
+
+let collected = 0;
+let totalTreasures = 0;
+
+let gameState = "title";
+// title / playing / gameover / win
+
+let invincibleUntil = 0;
+let enemyTimer = null;
+let transitionTimer = null;
+
+let soundEnabled = true;
+let audioContext = null;
+
+let walkFrame = 0;
+let lastMoveTime = 0;
+let facing = "down";
+
+// ==========================================
+// 2. 音效系統
+// 使用 Web Audio API，不需要外部音檔
+// ==========================================
+
+function initAudio() {
+
+    if (!audioContext) {
+
+        const AudioContextClass =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        if (AudioContextClass) {
+            audioContext = new AudioContextClass();
+        }
+    }
+
+    if (audioContext &&
+        audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+}
+
+function playTone(frequency, duration, type = "sine", volume = 0.12) {
+
+    if (!soundEnabled || !audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(
+        frequency,
+        audioContext.currentTime
+    );
+
+    gain.gain.setValueAtTime(
+        volume,
+        audioContext.currentTime
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + duration
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+function playSound(type) {
+
+    if (!soundEnabled) return;
+
+    initAudio();
+
+    switch (type) {
+
+        case "collect":
+            playTone(660, 0.12, "square");
+            setTimeout(() => playTone(880, 0.15, "square"), 100);
+            break;
+
+        case "hurt":
+            playTone(180, 0.3, "sawtooth", 0.15);
+            break;
+
+        case "level":
+            playTone(523, 0.15);
+            setTimeout(() => playTone(659, 0.15), 150);
+            setTimeout(() => playTone(784, 0.25), 300);
+            break;
+
+        case "win":
+            [523, 659, 784, 1047].forEach((note, index) => {
+                setTimeout(() => playTone(note, 0.3), index * 180);
+            });
+            break;
+
+        case "click":
+            playTone(440, 0.08, "square", 0.06);
+            break;
+    }
+}
+
+function toggleSound() {
+
+    soundEnabled = !soundEnabled;
+
+    document.getElementById("soundButton").textContent =
+        soundEnabled ? "🔊 音效：開啟" : "🔇 音效：關閉";
+
+    if (soundEnabled) {
+        initAudio();
+        playSound("click");
+    }
+}
+
+// ==========================================
+// 3. 初始化關卡
+// ==========================================
+
+function loadLevel() {
+
+    clearInterval(enemyTimer);
+
+    map = maps[level - 1].map(row => row.split(""));
+
+    enemies = [];
+    collected = 0;
+    totalTreasures = 0;
+
+    for (let y = 0; y < ROWS; y++) {
+
+        for (let x = 0; x < COLS; x++) {
+
+            const tile = map[y][x];
+
+            if (tile === "P") {
+                player = { x, y };
+                map[y][x] = ".";
+            }
+
+            if (tile === "E") {
+                enemies.push({ x, y });
+                map[y][x] = ".";
+            }
+
+            if (tile === "C") {
+                totalTreasures++;
+            }
+        }
+    }
+
+    invincibleUntil = 0;
+    lastMoveTime = 0;
+
+    updateUI();
+    drawGame();
+
+    document.getElementById("message").textContent =
+        "第 " + level + " 關：收集 " +
+        totalTreasures + " 個寶箱，找到出口！";
+
+    // 每關使用不同的怪物移動速度
+    enemyTimer = setInterval(
+        moveEnemies,
+        enemySpeeds[level - 1]
+    );
+}
+
+// ==========================================
+// 4. 繪製遊戲地圖
+// ==========================================
+
+function drawGame() {
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!map.length) return;
+
+    // 繪製地板及牆壁
+    for (let y = 0; y < ROWS; y++) {
+
+        for (let x = 0; x < COLS; x++) {
+
+            const tile = map[y][x];
+            const px = x * TILE;
+            const py = y * TILE;
+
+            // 地板
+            ctx.fillStyle = "#263449";
+            ctx.fillRect(px, py, TILE, TILE);
+
+            ctx.strokeStyle = "#34465d";
+            ctx.strokeRect(px, py, TILE, TILE);
+
+            // 牆壁
+            if (tile === "#") {
+
+                ctx.fillStyle = "#64748b";
+                ctx.fillRect(px, py, TILE, TILE);
+
+                ctx.fillStyle = "#94a3b8";
+                ctx.fillRect(px + 3, py + 3, 34, 4);
+
+                ctx.fillStyle = "#475569";
+                ctx.fillRect(px + 3, py + 20, 34, 4);
+
+                ctx.fillStyle = "#334155";
+                ctx.fillRect(px + 17, py + 7, 4, 13);
+            }
+
+            // 寶箱
+            if (tile === "C") {
+
+                ctx.fillStyle = "#92400e";
+                ctx.fillRect(px + 8, py + 15, 24, 18);
+
+                ctx.fillStyle = "#fbbf24";
+                ctx.fillRect(px + 8, py + 12, 24, 9);
+
+                ctx.fillStyle = "#fef3c7";
+                ctx.fillRect(px + 18, py + 18, 4, 8);
+            }
+
+            // 陷阱
+            if (tile === "T") {
+
+                ctx.fillStyle = "#7f1d1d";
+                ctx.fillRect(px + 5, py + 20, 30, 12);
+
+                ctx.fillStyle = "#ef4444";
+
+                for (let i = 0; i < 3; i++) {
+
+                    ctx.beginPath();
+                    ctx.moveTo(px + 7 + i * 10, py + 23);
+                    ctx.lineTo(px + 12 + i * 10, py + 8);
+                    ctx.lineTo(px + 17 + i * 10, py + 23);
+                    ctx.fill();
+                }
+            }
+
+            // 出口
+            if (tile === "X") {
+
+                ctx.fillStyle = "#166534";
+                ctx.fillRect(px + 7, py + 5, 26, 32);
+
+                ctx.fillStyle = "#4ade80";
+                ctx.fillRect(px + 12, py + 9, 16, 24);
+
+                ctx.fillStyle = "#854d0e";
+                ctx.fillRect(px + 23, py + 20, 3, 3);
+            }
+        }
+    }
+
+    // 繪製怪物動畫
+    enemies.forEach(enemy => {
+
+        const px = enemy.x * TILE;
+        const py = enemy.y * TILE;
+
+        const bounce = Math.sin(Date.now() / 180) * 2;
+
+        ctx.fillStyle = "#a855f7";
+        ctx.fillRect(px + 8, py + 13 + bounce, 24, 22);
+
+        ctx.fillRect(px + 12, py + 8 + bounce, 16, 8);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 12, py + 17 + bounce, 5, 6);
+        ctx.fillRect(px + 23, py + 17 + bounce, 5, 6);
+
+        ctx.fillStyle = "#111827";
+        ctx.fillRect(px + 14, py + 19 + bounce, 2, 3);
+        ctx.fillRect(px + 25, py + 19 + bounce, 2, 3);
+    });
+
+    // 繪製玩家動畫
+    drawPlayer();
+}
+
+// ==========================================
+// 5. 玩家像素角色動畫
+// ==========================================
+
+function drawPlayer() {
+
+    const px = player.x * TILE;
+    const py = player.y * TILE;
+
+    const walking =
+        Date.now() - lastMoveTime < 180;
+
+    const frame = walking
+        ? Math.floor(Date.now() / 90) % 2
+        : 0;
+
+    const bounce = walking && frame === 1 ? -3 : 0;
+
+    // 受傷時閃爍
+    if (
+        Date.now() < invincibleUntil &&
+        Math.floor(Date.now() / 100) % 2 === 0
+    ) {
+        return;
+    }
+
+    // 腳部
+    ctx.fillStyle = "#1d4ed8";
+
+    ctx.fillRect(
+        px + 8,
+        py + 29 + bounce + (frame ? 2 : 0),
+        10,
+        8
+    );
+
+    ctx.fillRect(
+        px + 22,
+        py + 29 + bounce + (frame ? 0 : 2),
+        10,
+        8
+    );
+
+    // 身體
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillRect(px + 9, py + 14 + bounce, 22, 19);
+
+    // 頭部
+    ctx.fillStyle = "#fde68a";
+    ctx.fillRect(px + 11, py + 5 + bounce, 18, 17);
+
+    // 頭髮
+    ctx.fillStyle = "#78350f";
+    ctx.fillRect(px + 11, py + 5 + bounce, 18, 5);
+    ctx.fillRect(px + 8, py + 9 + bounce, 4, 7);
+
+    // 眼睛方向
+    ctx.fillStyle = "#111827";
+
+    if (facing === "left") {
+
+        ctx.fillRect(px + 11, py + 12 + bounce, 3, 4);
+
+    } else if (facing === "right") {
+
+        ctx.fillRect(px + 26, py + 12 + bounce, 3, 4);
+
+    } else {
+
+        ctx.fillRect(px + 15, py + 12 + bounce, 3, 4);
+        ctx.fillRect(px + 23, py + 12 + bounce, 3, 4);
+    }
+}
+
+// ==========================================
+// 6. 玩家移動
+// ==========================================
+
+function move(dx, dy) {
+
+    if (gameState !== "playing") return;
+
+    const nx = player.x + dx;
+    const ny = player.y + dy;
+
+    // 不可穿越牆壁或邊界
+    if (
+        nx < 0 || nx >= COLS ||
+        ny < 0 || ny >= ROWS ||
+        map[ny][nx] === "#"
+    ) {
+        return;
+    }
+
+    player.x = nx;
+    player.y = ny;
+
+    if (dx < 0) facing = "left";
+    if (dx > 0) facing = "right";
+    if (dy < 0) facing = "up";
+    if (dy > 0) facing = "down";
+
+    lastMoveTime = Date.now();
+    walkFrame++;
+
+    checkCollision();
+    drawGame();
+    updateUI();
+}
+
+// ==========================================
+// 7. 碰撞與遊戲規則
+// ==========================================
+
+function checkCollision() {
+
+    const x = player.x;
+    const y = player.y;
+
+    // 收集寶箱
+    if (map[y][x] === "C") {
+
+        map[y][x] = ".";
+        collected++;
+
+        score += 100 * level;
+
+        playSound("collect");
+
+        document.getElementById("message").textContent =
+            "✨ 找到寶藏！ +" + (100 * level) + " 分";
+    }
+
+    // 踩到陷阱
+    if (map[y][x] === "T") {
+
+        loseLife("踩到陷阱了！");
+    }
+
+    // 碰到怪物
+    const hitEnemy = enemies.some(
+        enemy => enemy.x === x && enemy.y === y
+    );
+
+    if (hitEnemy) {
+
+        loseLife("被怪物抓到了！");
+    }
+
+    // 抵達出口
+    if (map[y][x] === "X") {
+
+        if (collected < totalTreasures) {
+
+            document.getElementById("message").textContent =
+                "還有寶箱沒收集！目前 " +
+                collected + " / " + totalTreasures;
+
+        } else {
+
+            completeLevel();
+        }
+    }
+}
+
+// ==========================================
+// 8. 生命值系統
+// ==========================================
+
+function loseLife(reason) {
+
+    if (Date.now() < invincibleUntil) return;
+
+    lives--;
+
+    // 受傷後一秒無敵
+    invincibleUntil = Date.now() + 1000;
+
+    playSound("hurt");
+
+    updateUI();
+    drawGame();
+
+    document.getElementById("message").textContent =
+        "💥 " + reason + " 生命值 -1";
+
+    if (lives <= 0) {
+
+        endGame("gameover");
+    }
+}
+
+// ==========================================
+// 9. 關卡系統
+// ==========================================
+
+function completeLevel() {
+
+    if (gameState !== "playing") return;
+
+    clearInterval(enemyTimer);
+
+    score += 200 * level;
+
+    updateUI();
+
+    playSound("level");
+
+    if (level >= 3) {
+
+        endGame("win");
+        return;
+    }
+
+    document.getElementById("message").textContent =
+        "🎉 第 " + level + " 關完成！";
+
+    gameState = "transition";
+
+    transitionTimer = setTimeout(() => {
+
+        if (gameState !== "transition") return;
+
+        level++;
+
+        loadLevel();
+
+        gameState = "playing";
+
+    }, 1300);
+}
+
+// ==========================================
+// 10. 怪物 AI
+// ==========================================
+
+function moveEnemies() {
+
+    if (gameState !== "playing") return;
+
+    enemies.forEach(enemy => {
+
+        const directions = [
+            { x: 0, y: -1 },
+            { x: 0, y: 1 },
+            { x: -1, y: 0 },
+            { x: 1, y: 0 }
+        ];
+
+        // 隨機打亂方向
+        for (let i = directions.length - 1; i > 0; i--) {
+
+            const j = Math.floor(Math.random() * (i + 1));
+
+            [directions[i], directions[j]] =
+                [directions[j], directions[i]];
+        }
+
+        for (const direction of directions) {
+
+            const nx = enemy.x + direction.x;
+            const ny = enemy.y + direction.y;
+
+            if (
+                nx >= 0 && nx < COLS &&
+                ny >= 0 && ny < ROWS &&
+                map[ny][nx] !== "#" &&
+                map[ny][nx] !== "T" &&
+                map[ny][nx] !== "X" &&
+                !enemies.some(
+                    other =>
+                        other !== enemy &&
+                        other.x === nx &&
+                        other.y === ny
+                )
+            ) {
+
+                enemy.x = nx;
+                enemy.y = ny;
+                break;
+            }
+        }
+    });
+
+    // 怪物追上玩家
+    if (
+        enemies.some(
+            enemy =>
+                enemy.x === player.x &&
+                enemy.y === player.y
+        )
+    ) {
+
+        loseLife("被怪物追上了！");
+    }
+
+    drawGame();
+    updateUI();
+}
+
+// ==========================================
+// 11. 更新介面
+// ==========================================
+
+function updateUI() {
+
+    document.getElementById("level").textContent =
+        level + " / 3";
+
+    document.getElementById("score").textContent =
+        score;
+
+    document.getElementById("life").textContent =
+        "❤️".repeat(Math.max(0, lives)) +
+        "🖤".repeat(Math.max(0, 3 - lives));
+}
+
+// ==========================================
+// 12. 鍵盤操作
+// ==========================================
+
+document.addEventListener("keydown", event => {
+
+    const key = event.key.toLowerCase();
+
+    const controls = {
+        "arrowup": [0, -1],
+        "w": [0, -1],
+
+        "arrowdown": [0, 1],
+        "s": [0, 1],
+
+        "arrowleft": [-1, 0],
+        "a": [-1, 0],
+
+        "arrowright": [1, 0],
+        "d": [1, 0]
+    };
+
+    if (controls[key]) {
+
+        event.preventDefault();
+
+        const [dx, dy] = controls[key];
+
+        move(dx, dy);
+    }
+});
+
+// ==========================================
+// 13. 遊戲結束與勝利畫面
+// ==========================================
+
+function endGame(result) {
+
+    clearInterval(enemyTimer);
+    clearTimeout(transitionTimer);
+
+    gameState = result;
+
+    const overlay = document.getElementById("overlay");
+
+    overlay.classList.remove("hidden");
+
+    if (result === "gameover") {
+
+        document.getElementById("overlayIcon").textContent = "💀";
+
+        document.getElementById("overlayTitle").textContent =
+            "GAME OVER";
+
+        document.getElementById("overlayText").innerHTML =
+            "探險結束！<br>最終分數：" + score +
+            "<br>抵達關卡：" + level;
+
+        document.getElementById("startButton").textContent =
+            "🔄 再玩一次";
+
+    } else {
+
+        playSound("win");
+
+        document.getElementById("overlayIcon").textContent = "🏆";
+
+        document.getElementById("overlayTitle").textContent =
+            "YOU WIN!";
+
+        document.getElementById("overlayText").innerHTML =
+            "恭喜你完成所有三個關卡！<br>" +
+            "最終分數：" + score +
+            "<br>你是真正的迷宮探險家！";
+
+        document.getElementById("startButton").textContent =
+            "🔄 再玩一次";
+    }
+
+    document.getElementById("message").textContent =
+        result === "win" ? "🏆 全部關卡完成！" : "遊戲結束！";
+}
+
+// ==========================================
+// 14. 開始遊戲
+// ==========================================
+
+function startGame() {
+
+    clearInterval(enemyTimer);
+    clearTimeout(transitionTimer);
+
+    initAudio();
+    playSound("click");
+
+    score = 0;
+    lives = 3;
+    level = 1;
+
+    gameState = "playing";
+
+    document.getElementById("overlay").classList.add("hidden");
+
+    loadLevel();
+}
+
+// ==========================================
+// 15. 重新開始遊戲
+// ==========================================
+
+function restartGame() {
+
+    startGame();
+}
+
+// ==========================================
+// 16. 角色動畫更新
+// ==========================================
+
+function animationLoop() {
+
+    if (gameState === "playing") {
+        drawGame();
+    }
+
+    requestAnimationFrame(animationLoop);
+}
+
+// ==========================================
+// 17. 初始化
+// ==========================================
+
+function initGame() {
+
+    map = maps[0].map(row => row.split(""));
+
+    updateUI();
+    drawGame();
+
+    animationLoop();
+}
+
+initGame();
+
+</script>
+
+</body>
+</html>
